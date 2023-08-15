@@ -102,38 +102,44 @@ OptimizeFooNewPM::run(llvm::Module &M, llvm::ModuleAnalysisManager &MAM) {
 
 #include "llvm/Passes/PassPlugin.h"
 
-extern "C" ::llvm::PassPluginLibraryInfo LLVM_ATTRIBUTE_WEAK
-llvmGetPassPluginInfo() {
-  llvm::errs() << "Running llvmGetPassPluginInfo()\n";
-  return {
-      LLVM_PLUGIN_API_VERSION, "FooNewPM", "v0.1", [](llvm::PassBuilder &PB) {
-        auto Plugin = PassPlugin::Load(
-            "/home/drehwald/prog/optPass/build/skeleton/libSkeletonPass.so");
-        if (auto E = Plugin.takeError()) {
-          // We must consume the error. Typically one of:
-          // - return the error to our caller
-          // - toString(), when logging
-          // - consumeError(), to silently swallow the error
-          // - handleErrors(), to distinguish error types
-          errs() << "Problem with loading " << toString(std::move(E)) << "\n";
-          return;
-        }
-        //// Register plugin extensions in PassBuilder.
-        Plugin->registerPassBuilderCallbacks(PB);
+// extern "C" ::llvm::PassPluginLibraryInfo LLVM_ATTRIBUTE_WEAK
+// llvmGetPassPluginInfo() {
+//   return {
+//       LLVM_PLUGIN_API_VERSION, "FooNewPM", "v0.1", [](llvm::PassBuilder &PB)
+//       {
+//         PB.registerPipelineParsingCallback(
+//             [](llvm::StringRef Name, llvm::ModulePassManager &MPM,
+//                llvm::ArrayRef<llvm::PassBuilder::PipelineElement>) {
+//               if (Name == "SkeletonPass") {
+//                 // llvm::errs() << "Found SkeletonPass\n";
+//                 MPM.addPass(OptimizeFooNewPM(/*Begin*/ true));
+//                 return true;
+//               }
+//               // llvm::errs() << "Not found\n";
+//               return false;
+//             });
+//       }};
+// }
 
-        PB.registerPipelineParsingCallback(
-            [](llvm::StringRef Name, llvm::ModulePassManager &MPM,
-               llvm::ArrayRef<llvm::PassBuilder::PipelineElement>) {
-              llvm::errs() << "allways adding SkeletonPass\n";
-              MPM.addPass(OptimizeFooNewPM(/*Begin*/ true));
-              return true;
-              if (Name == "SkeletonPass") {
-                llvm::errs() << "Found SkeletonPass\n";
-                MPM.addPass(OptimizeFooNewPM(/*Begin*/ true));
-                return true;
-              }
-              llvm::errs() << "Not found\n";
-              return false;
-            });
-      }};
+llvm::PassPluginLibraryInfo getHelloWorldPluginInfo() {
+  return {LLVM_PLUGIN_API_VERSION, "HelloWorld", LLVM_VERSION_STRING,
+          [](PassBuilder &PB) {
+            PB.registerPipelineParsingCallback(
+                [](StringRef Name, ModulePassManager &MPM,
+                   ArrayRef<PassBuilder::PipelineElement>) {
+                  if (Name == "SkeletonPass") {
+                    MPM.addPass(OptimizeFooNewPM(true));
+                    return true;
+                  }
+                  return false;
+                });
+          }};
+}
+
+// This is the core interface for pass plugins. It guarantees that 'opt' will
+// be able to recognize HelloWorld when added to the pass pipeline on the
+// command line, i.e. via '-passes=hello-world'
+extern "C" LLVM_ATTRIBUTE_WEAK ::llvm::PassPluginLibraryInfo
+llvmGetPassPluginInfo() {
+  return getHelloWorldPluginInfo();
 }

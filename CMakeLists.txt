@@ -16,6 +16,13 @@ list(APPEND CMAKE_MODULE_PATH "${LLVM_CMAKE_DIR}")
 
 add_subdirectory(skeleton)  # Use your pass name here.
 
-include(AddLLVM)
-
-add_llvm_pass_plugin(SkeletonPass skeleton/Skeleton.cpp)
+# include(AddLLVM)
+# 
+# add_llvm_pass_plugin(SkeletonPass skeleton/Skeleton.cpp)
+# 
+# add_llvm_loadable_module(SkeletonPass 
+#   skeleton/Skeleton.cpp
+# 
+#     PLUGIN_TOOL
+#     opt
+# )
